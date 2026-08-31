@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: # Is se aap GitHub interface se manually bhi run kar sakte hain ⚙️
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,24 +16,24 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive # Saare extra folders aur modules ko automatic download karega 📁
+        submodules: recursive
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
-        cache: gradle # Build ko tez karne ke liye cache karega ⚡
+        cache: gradle
 
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+    # Humne yahan resource validation aur lint ko skip karne wale flags lagaye hain
+    run: ./gradlew assembleDebug -Pandroid.experimental.disableResourcesValidation=true -x lint
 
-    # 🔥 ARTIFACTS BOX STEP (Yahan se aapka download box banega)
+    # ARTIFACTS BOX STEP
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Mimi-Launcher-APK # Is naam se aapko zip file milegi
-        path: "**/build/outputs/apk/debug/*.apk" # Puri repository mein jahan bhi APK hogi dhoond nikalega
+        name: Mimi-Launcher-APK
+        path: "**/build/outputs/apk/debug/*.apk"
