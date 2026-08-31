@@ -1,0 +1,39 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Is se aap GitHub interface se manually bhi run kar sakte hain ⚙️
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive # Saare extra folders aur modules ko automatic download karega 📁
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: gradle # Build ko tez karne ke liye cache karega ⚡
+
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x gradlew
+
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    # 🔥 ARTIFACTS BOX STEP (Yahan se aapka download box banega)
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Mimi-Launcher-APK # Is naam se aapko zip file milegi
+        path: "**/build/outputs/apk/debug/*.apk" # Puri repository mein jahan bhi APK hogi dhoond nikalega
