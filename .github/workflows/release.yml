@@ -1,38 +1,62 @@
-name: Release
+name: Build and Release Mimi Java Launcher
 
 on:
   push:
-    tags:
-      - "*"
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Release Version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      release_title:
+        description: 'Release Title'
+        required: true
+        default: 'Mimi Java Launcher New Build'
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-
-  release:
-    needs: build
+    name: Build APK and Create Release
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-      - name: Download apks
-        uses: actions/download-artifact@v6
-        with:
-          path: apks
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        cache: gradle
 
-      - name: Extract changelog for current version
-        run: |
-          awk -v tag="$GITHUB_REF_NAME" '
-            $0 ~ "^## \\[" tag "\\]" { found = 1; next }
-            found && $0 ~ "^## \\[" { exit }
-            found { print }
-          ' CHANGELOG.md > RELEASE_BODY.md
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x gradlew
 
-      - name: Release
-        uses: softprops/action-gh-release@v3
-        with:
-          token: ${{ secrets.TOKEN }}
-          files: apks/**/*.apk
-          body_path: RELEASE_BODY.md
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    # 1. Artifacts Box Step (Yahan se zip box banega)
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Mimi-Launcher-APK
+        path: "**/build/outputs/apk/debug/*.apk"
+
+    # 2. Binaries Se Releases Par Upload Karne Ka Step
+    - name: Create GitHub Release
+      if: github.event_name == 'workflow_dispatch'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event.inputs.version_name }}
+        name: ${{ github.event.inputs.release_title }}
+        draft: false
+        prerelease: false
+        files: "**/build/outputs/apk/debug/*.apk"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
