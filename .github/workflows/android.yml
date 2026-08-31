@@ -16,7 +16,7 @@ on:
 
 jobs:
   build:
-    name: Build and Release FoldCraft Launcher
+    name: Build and Release Mimi Java Launcher
     runs-on: ubuntu-latest
 
     steps:
